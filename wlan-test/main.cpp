@@ -8,10 +8,10 @@
 
 int main(int argc, char** argv)
 {
-	DWORD negotiated_version;
-	HANDLE handle;
+	DWORD negotiated_version = 0;
+	HANDLE handle = nullptr;
 
-	auto hr = WlanOpenHandle(WLAN_API_VERSION, nullptr, &negotiated_version, &handle);
+	HRESULT hr = WlanOpenHandle(WLAN_API_VERSION, nullptr, &negotiated_version, &handle);
 
 	if (FAILED(hr))
 	{
