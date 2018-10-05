@@ -44,6 +44,12 @@ int main(int argc, char** argv)
 	WlanFreeMemory(interface_list);
 	interface_list = nullptr;
 
+	hr = WlanScan(handle, &guid, nullptr, nullptr, nullptr);
+	if (FAILED(hr))
+	{
+		std::cout << "Warning: WlanScan failed with error code " << hr << std::endl;
+	}
+
 	// note that WlanGetAvailableNetworkList2 (*2*) does not exist on Windows 7
 	// (not that we needed the info provided by it anyway, but LET IT BE KNOWN)
 	PWLAN_AVAILABLE_NETWORK_LIST available_networks = nullptr;
