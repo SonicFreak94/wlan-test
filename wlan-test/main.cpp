@@ -4,7 +4,20 @@
 #include <wlanapi.h>
 
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include <string>
+
+using namespace std::chrono;
+
+static bool scan_complete = false;
+
+// this callback will be used to wait for WlanScan to complete.
+static void wlan_callback(PWLAN_NOTIFICATION_DATA Arg1, PVOID Arg2)
+{
+	// yeah I'm just ignoring everything given to me; it's gross
+	scan_complete = true;
+}
 
 int main(int argc, char** argv)
 {
@@ -19,8 +32,18 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	PWLAN_INTERFACE_INFO_LIST interface_list = nullptr;
+	// this registers a callback that allows us to wait for WlanScan to complete.
+	// it will automatically unregister when WlanCloseHandle is called, but can
+	// otherwise be unregistered with WLAN_NOTIFICATION_SOURCE_NONE.
+	hr = WlanRegisterNotification(handle, WLAN_NOTIFICATION_SOURCE_ACM, true,
+	                              &wlan_callback, nullptr, nullptr, 0);
 
+	if (FAILED(hr))
+	{
+		std::cout << "Warning: WlanRegisterNotification failed. Scan will time out waiting for completion." << std::endl;
+	}
+
+	PWLAN_INTERFACE_INFO_LIST interface_list = nullptr;
 	hr = WlanEnumInterfaces(handle, nullptr, &interface_list);
 
 	if (FAILED(hr))
@@ -38,16 +61,58 @@ int main(int argc, char** argv)
 		return -3;
 	}
 
+	std::cout << "Detected interfaces: " << std::endl;
+
+	for (size_t i = 0; i < interface_list->dwNumberOfItems; ++i)
+	{
+		const auto& info = interface_list->InterfaceInfo[i];
+		std::cout << '\t' << i + 1 << ": ";
+		// god damn it microsoft why can't you be normal
+		std::wcout << info.strInterfaceDescription << std::endl;
+	}
+
+	std::cout << std::endl;
+
 	// blindly select the first one because reasons
 	GUID guid = interface_list->InterfaceInfo[0].InterfaceGuid;
 
 	WlanFreeMemory(interface_list);
 	interface_list = nullptr;
 
+	// this requests a refresh on the list of detected wifi networks
 	hr = WlanScan(handle, &guid, nullptr, nullptr, nullptr);
+
 	if (FAILED(hr))
 	{
 		std::cout << "Warning: WlanScan failed with error code " << hr << std::endl;
+	}
+	else
+	{
+		constexpr auto now = []() -> auto
+		{
+			return high_resolution_clock::now();
+		};
+
+		std::cout << "Waiting for WlanScan to complete..." << std::endl;
+
+		// microsoft recommends waiting for (and requires that drivers only take)
+		// four seconds to complete the scan, so we're gonna bail after that if
+		// we don't hear back from that callback.
+		const auto start = now();
+
+		while (!scan_complete)
+		{
+			if (now() - start >= 4s)
+			{
+				std::cout << "Warning: WlanScan took too long to complete." << std::endl;
+				break;
+			}
+
+			std::this_thread::sleep_for(1ms);
+		}
+
+		// this is why printf is better
+		std::cout << "Elapsed time: " << duration_cast<seconds>(now() - start).count() << "s" << std::endl;
 	}
 
 	// note that WlanGetAvailableNetworkList2 (*2*) does not exist on Windows 7
