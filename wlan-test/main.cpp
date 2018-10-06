@@ -15,8 +15,11 @@ static bool scan_complete = false;
 // this callback will be used to wait for WlanScan to complete.
 static void wlan_callback(PWLAN_NOTIFICATION_DATA Arg1, PVOID Arg2)
 {
-	// yeah I'm just ignoring everything given to me; it's gross
-	scan_complete = true;
+	// might be worth handling wlan_notification_acm_scan_fail
+	if (Arg1->NotificationCode == wlan_notification_acm_scan_complete)
+	{
+		scan_complete = true;
+	}
 }
 
 int main(int argc, char** argv)
