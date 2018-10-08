@@ -77,6 +77,9 @@ int main(int argc, char** argv)
 
 		const GUID& guid = info.InterfaceGuid;
 
+		// this is used to detect the completion of the WlanScan callback
+		scan_complete = false;
+
 		// this requests a refresh on the list of detected wifi networks
 		hr = WlanScan(handle, &guid, nullptr, nullptr, nullptr);
 
