@@ -82,7 +82,7 @@ int main(int argc, char** argv)
 
 		if (FAILED(hr))
 		{
-			std::cout << "Warning: WlanScan failed with error code " << hr << std::endl;
+			std::cout << "\tWarning: WlanScan failed with error code " << hr << std::endl;
 		}
 		else
 		{
