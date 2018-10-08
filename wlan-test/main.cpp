@@ -156,7 +156,5 @@ int main(int argc, char** argv)
 	interface_list = nullptr;
 
 	WlanCloseHandle(handle, nullptr);
-	std::cout << "Press enter to exit." << std::endl;
-	getchar();
 	return 0;
 }
