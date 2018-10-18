@@ -11,13 +11,15 @@
 
 using namespace std::chrono;
 
+static GUID scan_guid {};
 static std::atomic<bool> scan_complete = false;
 
 // this callback will be used to wait for WlanScan to complete.
 static void wlan_callback(PWLAN_NOTIFICATION_DATA Arg1, PVOID Arg2)
 {
 	// might be worth handling wlan_notification_acm_scan_fail
-	if (Arg1->NotificationCode == wlan_notification_acm_scan_complete)
+	if (Arg1->InterfaceGuid == scan_guid &&
+	    Arg1->NotificationCode == wlan_notification_acm_scan_complete)
 	{
 		scan_complete = true;
 	}
@@ -76,6 +78,7 @@ int main(int argc, char** argv)
 		std::wcout << info.strInterfaceDescription << std::endl;
 
 		const GUID& guid = info.InterfaceGuid;
+		scan_guid = guid;
 
 		// this is used to detect the completion of the WlanScan callback
 		scan_complete = false;
